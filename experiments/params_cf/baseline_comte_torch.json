@@ -1,0 +1,14 @@
+{
+  "seed": 24,
+  "subset": true,
+  "subset_number": 100,
+
+  "scaling": "standard",
+  "data_format": "torch",
+
+  "number_distractors": 1,
+  "max_attempts": 1000,
+  "max_iter": 1000,
+  "restarts": 5,
+  "reg": 0.8
+}

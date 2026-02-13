@@ -1,0 +1,40 @@
+{
+  "metadata": "test v2",
+  "seed": 24,
+  "subset": true,
+  "subset_number": 100,
+  "include_params_as_experiment_name": [[]],
+
+  "scaling": "standard",
+  "data_format": "torch",
+
+  "n_neighbors": 1,
+
+  "weight_losses": [[0.1, 0.3, 0.4, 0.2]],
+  "mask_init": ["ones"],
+  "reward_type": ["incremental"],
+  "non_valid_penalization": [-1],
+
+  "channel_groups": ["HierarchicalClusteringFixedK"],
+  "ch_similarity": ["pearson"],
+
+  "algorithm_cemnn_elite_frac": [0.1],
+  "algorithm_cemnn_alpha": [0.75],
+  "algorithm_cemnn_warm_alpha": [0],
+  "algorithm_cemnn_hierarchy_warm_alpha": [0.25],
+  "algorithm_cemnn_use_conditional_reuse": [false],
+  "algorithm_cemnn_tabu_mode": [true],
+  "algorithm_cemnn_num_simulations_ratio": [2],
+  "algorithm_cemnn_planning_steps": [1, 3, 5],
+  "algorithm_cemnn_planning_credit": [false],
+  "algorithm_cemnn_cem_iters": [3],
+  "algorithm_cemnn_plan_every": [1],
+  "algorithm_cemnn_temp": [1.0],
+  "algorithm_cemnn_search_target": ["fitness_weighted"],
+  "algorithm_cemnn_ts_ch_block_pcts": [
+    [[0.2, 0.2], [0.2, 0.05], [0.05, 0.05]]
+  ],
+  "algorithm_cemnn_block_non_adj_mask": [true],
+  "max_steps": [50],
+  "tensorboard": false
+}

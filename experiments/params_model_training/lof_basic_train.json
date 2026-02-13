@@ -1,0 +1,11 @@
+{
+  "experiment_name": "lof_basic_train",
+
+  "seed": [42],
+
+  "min_max_scaling": [false],
+  "n_neighbors": [1, 5, 10, 20, 50],
+  "contamination": [0.05, 0.1, 0.2, 0.4],
+  "p": [1, 2],
+  "n_jobs": [10]
+}

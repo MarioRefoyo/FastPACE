@@ -1,0 +1,6 @@
+stumpy==1.11.1
+matrixprofile==1.1.10
+tensorflow==2.7.0
+sklearn
+pandas
+scipy==1.3.3

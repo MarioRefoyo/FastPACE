@@ -1,0 +1,17 @@
+{
+  "experiment_name": "inceptiontime_pytorch",
+  "model_type": "InceptionTime",
+
+  "seed": [0],
+
+  "scaling": ["standard"],
+  "depth": 6,
+  "out_channels": 32,
+  "bottleneck_channels": 32,
+  "kernel_sizes": [40],
+  "batch_size": [64],
+  "learning_rate": [1e-3],
+  "epochs": 500,
+  "es_patience": 50,
+  "lr_patience": 15
+}

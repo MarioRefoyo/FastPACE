@@ -1,0 +1,25 @@
+{
+  "metadata": "MultiSub-SpaCE final setting",
+  "seed": 24,
+  "subset": true,
+  "subset_number": 100,
+
+  "scaling": "standard",
+  "data_format": "tf",
+
+  "independent_channels_nun": false,
+  "n_neighbors": 1,
+
+  "population_size": 100,
+  "change_subseq_mutation_prob": [0.75],
+  "integrated_pruning_mutation_prob": [0],
+  "final_pruning_mutation_prob": [0.5],
+  "add_subseq_mutation_prob": 0,
+  "max_iter": [[75, 0, 25]],
+  "init_fi": ["none"],
+  "init_pct": 0.2,
+  "reinit": true,
+  "init_random_mix_ratio": 0.5,
+  "invalid_penalization": 100,
+  "plausibility_objective": ["ios"]
+}

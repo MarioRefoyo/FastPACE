@@ -1,0 +1,12 @@
+__pycache__
+.ipynb_checkpoints
+.idea/*
+data/*
+experiments/data/*
+experiments/results/*
+experiments/models/*/
+experiments/logs/*
+lightning_logs
+
+
+

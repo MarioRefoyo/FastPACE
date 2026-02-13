@@ -1,0 +1,14 @@
+{
+  "experiment_name": "cls_basic_train",
+
+  "seed": [42],
+
+  "model_type": ["cnn-simple", "cnn-intermediate", "cnn-complex"],
+  "min_max_scaling": [false],
+  "dropout": 0.2,
+  "batch_size": 32,
+  "learning_rate": 1e-3,
+  "epochs": 200,
+  "es_patience": 30,
+  "lrs_patience": 10
+}

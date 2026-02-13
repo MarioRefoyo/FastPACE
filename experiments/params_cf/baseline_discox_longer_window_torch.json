@@ -1,0 +1,10 @@
+{
+  "seed": 24,
+  "subset": true,
+  "subset_number": 100,
+
+  "scaling": "standard",
+  "data_format": "tf",
+
+  "window_pct": 0.3
+}
