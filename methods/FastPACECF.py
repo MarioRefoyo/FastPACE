@@ -7,10 +7,10 @@ from copy import copy, deepcopy
 import tempfile
 
 from .counterfactual_common import CounterfactualMethod
-from methods.RL.env import SingleTSDiscreteMaskCFEnv
+from methods.FastPACE.env import SingleTSDiscreteMaskCFEnv
 
-from methods.RL.algorithms import HierarchicalCEMNN
-from methods.RL.hierachical_clustering import ChannelHierarchy, NaiveOrder, ChannelGreedyGroups, ChannelHierarchyFixedK
+from methods.FastPACE.algorithms import HierarchicalCEMNN
+from methods.FastPACE.hierachical_clustering import ChannelHierarchy, NaiveOrder, ChannelGreedyGroups, ChannelHierarchyFixedK
 
 from stable_baselines3 import PPO, DQN, SAC
 from stable_baselines3.common.env_util import make_vec_env
