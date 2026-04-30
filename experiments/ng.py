@@ -35,6 +35,38 @@ DATASETS = [
     # 'Strawberry', 'TwoPatterns'
 ]
 
+DATASETS = [
+    'Adiac',
+    'ArrowHead',
+    'BirdChicken',
+    'Car',
+    'ECGFiveDays',
+    'FaceFour',
+    'Fish',
+    'FordB',
+    'LargeKitchenAppliances',
+    'Lightning2',
+    'Lightning7',
+    'Mallat',
+    'MiddlePhalanxOutlineCorrect',
+    'MoteStrain',
+    'NonInvasiveFatalECGThorax1',
+    'OSULeaf',
+    'ProximalPhalanxOutlineAgeGroup',
+    'ShapesAll',
+    'SonyAIBORobotSurface2',
+    'StarLightCurves',
+    'SwedishLeaf',
+    'Symbols',
+    'SyntheticControl',
+    'ToeSegmentation1',
+    'ToeSegmentation2',
+    'Trace',
+    'TwoLeadECG',
+    'Wafer',
+    'Yoga'
+ ]
+
 # PARAMS_PATH = 'experiments/params_cf/baseline_ng.json'
 # MODEL_TO_EXPLAIN_EXPERIMENT_NAME = 'cls_basic_train'
 # MODEL_TO_EXPLAIN_EXPERIMENT_NAME = 'inceptiontime_noscaling'
@@ -43,8 +75,8 @@ MODEL_TO_EXPLAIN_EXPERIMENT_NAME = 'inceptiontime_pytorch'
 
 MULTIPROCESSING = True
 I_START = 0
-THREAD_SAMPLES = 5
-POOL_SIZE = 10
+THREAD_SAMPLES = 100
+POOL_SIZE = 1
 
 
 def get_counterfactual_worker(sample_dict):

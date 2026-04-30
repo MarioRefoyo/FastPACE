@@ -15,7 +15,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from experiments.experiment_utils import (local_data_loader, ucr_data_loader, label_encoder,
+from experiments.experiment_utils import (local_data_loader, ucr_data_loader, label_encoder, dataset_cache_is_valid,
                                           load_parameters_from_json, generate_settings_combinations)
 from experiments.models.pytorch_Autoencoders import AEModelConstructorV1
 from methods.outlier_calculators import AEOutlierCalculator
@@ -105,8 +105,42 @@ DATASETS = [
     # 'ArticularyWordRecognition', 'Epilepsy',
     # 'PenDigits',
     'PEMS-SF',
-    # 'RacketSports', 'SelfRegulationSCP1'
+    # 'RacketSports', 'SelfRegulationSCP1',
+    'CharacterTrajectories', 'SpokenArabicDigits', 'JapaneseVowels', 'ERing', 'Libras'
 ]"""
+
+DATASETS = [
+    'Adiac',
+    'ArrowHead',
+    'BirdChicken',
+    'Car',
+    'ECGFiveDays',
+    'FaceFour',
+    'Fish',
+    'FordB',
+    'LargeKitchenAppliances',
+    'Lightning2',
+    'Lightning7',
+    'Mallat',
+    'MiddlePhalanxOutlineCorrect',
+    'MoteStrain',
+    'NonInvasiveFatalECGThorax1',
+    'OSULeaf',
+    'ProximalPhalanxOutlineAgeGroup',
+    'ShapesAll',
+    'SonyAIBORobotSurface2',
+    'StarLightCurves',
+    'SwedishLeaf',
+    'Symbols',
+    'SyntheticControl',
+    'ToeSegmentation1',
+    'ToeSegmentation2',
+    'Trace',
+    'TwoLeadECG',
+    'Wafer',
+    'Yoga'
+ ]
+
 PARAMS_PATH = 'experiments/params_model_training/pytorch_ae_basic_train_scaling.json'
 
 
@@ -209,12 +243,12 @@ def train_ae_experiment(dataset, exp_name, exp_hash, params):
 
     # Load data
     scaling = params["scaling"]
-    if os.path.isdir(f"./experiments/data/UCR/{dataset}"):
+    if dataset_cache_is_valid(dataset, data_path="./experiments/data"):
         X_train, y_train, X_test, y_test, ts_length, n_channels = local_data_loader(
             str(dataset), scaling, backend="torch", data_path="./experiments/data"
         )
     else:
-        os.makedirs(f"./experiments/data/UCR/{dataset}")
+        os.makedirs(f"./experiments/data/UCR/{dataset}", exist_ok=True)
         X_train, y_train, X_test, y_test = ucr_data_loader(
             dataset, scaling, backend="torch", store_path="./experiments/data/UCR"
         )

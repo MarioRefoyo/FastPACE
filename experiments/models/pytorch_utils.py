@@ -14,10 +14,10 @@ from torch import nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 
-from experiments.models.pytorch_FCN import FCN
+# from experiments.models.pytorch_FCN import FCN
 from experiments.models.pytorch_InceptionTime import InceptionModel
 from experiments.models.pytorch_learners import BasicLearner
-from experiments.data_utils import local_data_loader, ucr_data_loader, label_encoder
+from experiments.data_utils import local_data_loader, ucr_data_loader, label_encoder, dataset_cache_is_valid
 
 from torchsummary import summary
 
@@ -165,11 +165,15 @@ def train_experiment(dataset, exp_name, exp_hash, params):
 
     # Load data
     scaling = params["scaling"]
-    if os.path.isdir(f"./experiments/data/UCR/{dataset}"):
-        X_train, y_train, X_test, y_test, _, _ = local_data_loader(str(dataset), scaling, backend="torch", data_path="./experiments/data")
+    if dataset_cache_is_valid(dataset, data_path="./experiments/data"):
+        X_train, y_train, X_test, y_test, _, _ = local_data_loader(
+            str(dataset), scaling, backend="torch", data_path="./experiments/data"
+        )
     else:
-        os.makedirs(f"./experiments/data/UCR/{dataset}")
-        X_train, y_train, X_test, y_test = ucr_data_loader(dataset, scaling, backend="torch", store_path="./experiments/data/UCR")
+        os.makedirs(f"./experiments/data/UCR/{dataset}", exist_ok=True)
+        X_train, y_train, X_test, y_test = ucr_data_loader(
+            dataset, scaling, backend="torch", store_path="./experiments/data/UCR"
+        )
         if X_train is None:
             raise ValueError(f"Dataset {dataset} could not be downloaded")
     y_train, y_test = label_encoder(y_train, y_test)

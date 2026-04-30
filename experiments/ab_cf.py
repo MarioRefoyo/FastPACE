@@ -31,15 +31,51 @@ DATASETS = [
     'ItalyPowerDemand',
     # 'NonInvasiveFatalECGThorax2', 'Plane',
     # 'ProximalPhalanxOutlineCorrect',
-    # 'Strawberry', 'TwoPatterns'
+    # 'Strawberry', 'TwoPatterns',
+    # 'CharacterTrajectories',
+    'SpokenArabicDigits',
+    # 'JapaneseVowels',
+    # 'ERing', 'Libras'
 ]
+
+DATASETS = [
+    'Adiac',
+    'ArrowHead',
+    'BirdChicken',
+    'Car',
+    'ECGFiveDays',
+    'FaceFour',
+    'Fish',
+    'FordB',
+    'LargeKitchenAppliances',
+    'Lightning2',
+    'Lightning7',
+    'Mallat',
+    'MiddlePhalanxOutlineCorrect',
+    'MoteStrain',
+    'NonInvasiveFatalECGThorax1',
+    'OSULeaf',
+    'ProximalPhalanxOutlineAgeGroup',
+    'ShapesAll',
+    'SonyAIBORobotSurface2',
+    'StarLightCurves',
+    'SwedishLeaf',
+    'Symbols',
+    'SyntheticControl',
+    'ToeSegmentation1',
+    'ToeSegmentation2',
+    'Trace',
+    'TwoLeadECG',
+    'Wafer',
+    'Yoga'
+ ]
 
 # PARAMS_PATH = 'experiments/params_cf/baseline_abcf.json'
 # MODEL_TO_EXPLAIN_EXPERIMENT_NAME = 'cls_basic_train'
 # MODEL_TO_EXPLAIN_EXPERIMENT_NAME = 'inceptiontime_noscaling'
 # PARAMS_PATH = 'experiments/params_cf/baseline_abcf_torch.json'
 MODEL_TO_EXPLAIN_EXPERIMENT_NAME = 'inceptiontime_pytorch'
-PARAMS_PATH = 'experiments/params_cf/baseline_abcf_longer_window_torch.json'
+PARAMS_PATH = 'experiments/params_cf/baseline_abcf_torch.json'
 # MODEL_TO_EXPLAIN_EXPERIMENT_NAME = 'fcn_pytorch'
 
 MULTIPROCESSING = False

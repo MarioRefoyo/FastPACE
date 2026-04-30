@@ -26,7 +26,38 @@ DATASETS = [
     'ProximalPhalanxOutlineCorrect',
     'Strawberry', 'TwoPatterns'
 ]
-DATASETS = ['ItalyPowerDemand']
+DATASETS = [
+    'Adiac',
+    'ArrowHead',
+    'BirdChicken',
+    'Car',
+    'ECGFiveDays',
+    'FaceFour',
+    'Fish',
+    'FordB',
+    'LargeKitchenAppliances',
+    'Lightning2',
+    'Lightning7',
+    'Mallat',
+    'MiddlePhalanxOutlineCorrect',
+    'MoteStrain',
+    'NonInvasiveFatalECGThorax1',
+    'OSULeaf',
+    'ProximalPhalanxOutlineAgeGroup',
+    'ShapesAll',
+    'SonyAIBORobotSurface2',
+    'StarLightCurves',
+    'SwedishLeaf',
+    'Symbols',
+    'SyntheticControl',
+    'ToeSegmentation1',
+    'ToeSegmentation2',
+    'Trace',
+    'TwoLeadECG',
+    'Wafer',
+    'Yoga'
+ ]
+
 
 """DATASETS = [
     "BasicMotions", "NATOPS", "UWaveGestureLibrary",
@@ -36,10 +67,14 @@ DATASETS = ['ItalyPowerDemand']
     'PenDigits',
     'PEMS-SF',
     'RacketSports', 'SelfRegulationSCP1'
+    # 'CharacterTrajectories', 'SpokenArabicDigits',
+    'JapaneseVowels',
+    # 'ERing', 'Libras'
+]
 ]"""
 
-PARAMS_PATH = 'experiments/params_cf/baseline_discox_longer_window_torch.json'
-# PARAMS_PATH = 'experiments/params_cf/baseline_discox_torch.json'
+# PARAMS_PATH = 'experiments/params_cf/baseline_discox_longer_window_torch.json'
+PARAMS_PATH = 'experiments/params_cf/baseline_discox_torch.json'
 MODEL_TO_EXPLAIN_EXPERIMENT_NAME = 'inceptiontime_pytorch'
 MULTIPROCESSING = True
 I_START = 0

@@ -39,8 +39,43 @@ DATASETS = [
     'ItalyPowerDemand',
     'NonInvasiveFatalECGThorax2', 'Plane',
     'ProximalPhalanxOutlineCorrect',
-    'Strawberry', 'TwoPatterns'
+    'Strawberry', 'TwoPatterns',
+    'CharacterTrajectories', 'SpokenArabicDigits',
+    'JapaneseVowels',
+    'ERing', 'Libras'
 ]
+
+DATASETS = [
+    'Adiac',
+    'ArrowHead',
+    'BirdChicken',
+    'Car',
+    'ECGFiveDays',
+    'FaceFour',
+    'Fish',
+    'FordB',
+    'LargeKitchenAppliances',
+    'Lightning2',
+    'Lightning7',
+    'Mallat',
+    'MiddlePhalanxOutlineCorrect',
+    'MoteStrain',
+    'NonInvasiveFatalECGThorax1',
+    'OSULeaf',
+    'ProximalPhalanxOutlineAgeGroup',
+    'ShapesAll',
+    'SonyAIBORobotSurface2',
+    'StarLightCurves',
+    'SwedishLeaf',
+    'Symbols',
+    'SyntheticControl',
+    'ToeSegmentation1',
+    'ToeSegmentation2',
+    'Trace',
+    'TwoLeadECG',
+    'Wafer',
+    'Yoga'
+ ]
 
 PARAMS_PATH = 'experiments/params_cf/baseline_multisubspace_final_pytorch.json'
 # MODEL_TO_EXPLAIN_EXPERIMENT_NAME = "fcn_pytorch"

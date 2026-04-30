@@ -15,7 +15,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
-from experiments.data_utils import local_data_loader, ucr_data_loader, label_encoder
+from experiments.data_utils import local_data_loader, ucr_data_loader, label_encoder, dataset_cache_is_valid
 from experiments.models.pytorch_utils import model_selector
 
 from methods.outlier_calculators import AEOutlierCalculator

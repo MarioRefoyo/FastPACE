@@ -26,6 +26,12 @@ DATASETS = [
     'PEMS-SF',
     'RacketSports', 'SelfRegulationSCP1'
 ]
+DATASETS = [
+    'CharacterTrajectories', 'SpokenArabicDigits',
+    'JapaneseVowels',
+    'ERing', 'Libras'
+]
+
 PARAMS_PATH = 'experiments/params_cf/baseline_comte_torch.json'
 MODEL_TO_EXPLAIN_EXPERIMENT_NAME = 'inceptiontime_pytorch'
 MULTIPROCESSING = True

@@ -12,6 +12,7 @@ Requests==2.32.5
 scikit_learn==1.8.0
 scikit_optimize==0.10.2
 scipy==1.17.0
+scikit-posthocs==0.12.0
 stable_baselines3==2.6.0
 tensorflow==2.13.0
 tensorflow_intel==2.13.0

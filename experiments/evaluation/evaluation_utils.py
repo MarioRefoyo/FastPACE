@@ -2,8 +2,11 @@ import os
 import copy
 import pickle
 import json
+from itertools import combinations
+from pathlib import Path
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from tqdm import tqdm
 import tensorflow as tf
 from multiprocessing import Pool
@@ -621,3 +624,503 @@ def calculate_method_metrics(model_wrapper, outlier_calculators, data_format, X_
     results['nun_fitness'] = nuns_fitness
     results["ImprovementOverNUN"] = fitness - nuns_fitness
     return results
+
+
+def build_metric_rank_matrix(results_df, metric, higher_is_better=False, rank_tie_method="average",
+                             drop_incomplete_datasets=True):
+    metric_col = f"{metric}_mean"
+    if metric_col not in results_df.columns:
+        raise KeyError(f"Missing required column '{metric_col}' in results_df.")
+
+    valid_tie_methods = {"average", "min", "max", "dense", "first"}
+    if rank_tie_method not in valid_tie_methods:
+        raise ValueError(
+            f"Unsupported rank_tie_method='{rank_tie_method}'. "
+            f"Choose one of {sorted(valid_tie_methods)}."
+        )
+
+    metric_matrix = results_df.pivot_table(
+        index="dataset",
+        columns="method",
+        values=metric_col,
+        aggfunc="mean",
+    ).dropna(axis=1, how="all")
+    if drop_incomplete_datasets:
+        # Keep only datasets with complete values across the compared methods for this metric.
+        metric_matrix = metric_matrix.dropna(axis=0, how="any")
+
+    rank_matrix = metric_matrix.rank(axis=1, method=rank_tie_method, ascending=not higher_is_better)
+    return metric_matrix, rank_matrix
+
+
+def compute_pairwise_wilcoxon_holm(metric_matrix, higher_is_better=False, alpha=0.05,
+                                   alternative="two-sided", zero_method="wilcox"):
+    from scipy.stats import wilcoxon
+
+    try:
+        from statsmodels.stats.multitest import multipletests
+    except Exception as exc:
+        raise ImportError(
+            "statsmodels is required for Holm correction. "
+            "Install it with: pip install statsmodels"
+        ) from exc
+
+    methods = list(metric_matrix.columns)
+    pairs = list(combinations(methods, 2))
+    if len(pairs) == 0:
+        empty_matrix = pd.DataFrame(index=methods, columns=methods, dtype=float)
+        return pd.DataFrame(), empty_matrix
+
+    rows = []
+    raw_p_values = []
+    for method_a, method_b in pairs:
+        vals_a = metric_matrix[method_a].to_numpy(dtype=float)
+        vals_b = metric_matrix[method_b].to_numpy(dtype=float)
+
+        if np.allclose(vals_a, vals_b, equal_nan=False):
+            statistic = 0.0
+            p_value = 1.0
+        else:
+            statistic, p_value = wilcoxon(
+                vals_a, vals_b,
+                alternative=alternative,
+                zero_method=zero_method,
+                method="auto",
+            )
+
+        # Positive deltas mean method_a is better.
+        if higher_is_better:
+            deltas = vals_a - vals_b
+        else:
+            deltas = vals_b - vals_a
+        deltas = deltas[np.isfinite(deltas)]
+
+        wins_a = int(np.sum(deltas > 0))
+        wins_b = int(np.sum(deltas < 0))
+        ties = int(np.sum(np.isclose(deltas, 0)))
+        median_delta = float(np.median(deltas)) if deltas.size > 0 else np.nan
+        mean_delta = float(np.mean(deltas)) if deltas.size > 0 else np.nan
+
+        if np.isclose(median_delta, 0):
+            better_method = "tie"
+        else:
+            better_method = method_a if median_delta > 0 else method_b
+
+        rows.append({
+            "method_a": method_a,
+            "method_b": method_b,
+            "wilcoxon_statistic": float(statistic),
+            "p_value_raw": float(p_value),
+            "wins_a": wins_a,
+            "wins_b": wins_b,
+            "ties": ties,
+            "mean_delta_a_minus_b": mean_delta,
+            "median_delta_a_minus_b": median_delta,
+            "better_method": better_method,
+        })
+        raw_p_values.append(float(p_value))
+
+    reject, p_holm, _, _ = multipletests(raw_p_values, alpha=alpha, method="holm")
+    for row, p_corr, rejected in zip(rows, p_holm, reject):
+        row["p_value_holm"] = float(p_corr)
+        row["reject_holm"] = bool(rejected)
+
+    pairwise_df = pd.DataFrame(rows).sort_values(
+        ["p_value_holm", "p_value_raw", "method_a", "method_b"]
+    ).reset_index(drop=True)
+
+    pvalue_matrix = pd.DataFrame(
+        np.ones((len(methods), len(methods)), dtype=float),
+        index=methods, columns=methods
+    )
+    for row in pairwise_df.to_dict("records"):
+        pvalue_matrix.loc[row["method_a"], row["method_b"]] = row["p_value_holm"]
+        pvalue_matrix.loc[row["method_b"], row["method_a"]] = row["p_value_holm"]
+
+    return pairwise_df, pvalue_matrix
+
+
+def generate_wilcoxon_holm_tables(results_df, metrics, higher_is_better_metrics=None, alpha=0.05,
+                                  method_order=None, metric_name_map=None):
+    higher_is_better_metrics = set(higher_is_better_metrics or [])
+    metric_name_map = metric_name_map or {}
+    summary_rows = []
+    pairwise_tables = {}
+    holm_pvalue_matrices = {}
+
+    for metric in metrics:
+        higher_is_better = metric in higher_is_better_metrics
+        metric_matrix, _ = build_metric_rank_matrix(
+            results_df, metric, higher_is_better=higher_is_better
+        )
+
+        if method_order is not None:
+            ordered_cols = [m for m in method_order if m in metric_matrix.columns]
+            if ordered_cols:
+                metric_matrix = metric_matrix[ordered_cols]
+
+        if metric_matrix.shape[0] < 2 or metric_matrix.shape[1] < 2:
+            print(
+                f"Skipping {metric}: need at least 2 datasets and 2 methods after filtering."
+            )
+            continue
+
+        pairwise_df, holm_matrix = compute_pairwise_wilcoxon_holm(
+            metric_matrix=metric_matrix,
+            higher_is_better=higher_is_better,
+            alpha=alpha,
+        )
+
+        display_metric = metric_name_map.get(metric, metric)
+        pairwise_tables[metric] = pairwise_df
+        holm_pvalue_matrices[metric] = holm_matrix
+        summary_rows.append({
+            "metric": metric,
+            "display_metric": display_metric,
+            "n_datasets": int(metric_matrix.shape[0]),
+            "n_methods": int(metric_matrix.shape[1]),
+            "n_pairs": int(pairwise_df.shape[0]),
+            "n_significant_holm": int(pairwise_df["reject_holm"].sum()),
+            "min_p_holm": float(pairwise_df["p_value_holm"].min()),
+        })
+
+    if len(summary_rows) == 0:
+        summary_df = pd.DataFrame(
+            columns=[
+                "metric", "display_metric", "n_datasets", "n_methods",
+                "n_pairs", "n_significant_holm", "min_p_holm"
+            ]
+        )
+        return summary_df, pairwise_tables, holm_pvalue_matrices
+
+    summary_df = pd.DataFrame(summary_rows).sort_values("metric").reset_index(drop=True)
+    return summary_df, pairwise_tables, holm_pvalue_matrices
+
+
+def generate_critical_difference_diagrams(results_df, metrics, higher_is_better_metrics=None,
+                                          alpha=0.05, method_order=None, metric_name_map=None,
+                                          posthoc="nemenyi",
+                                          rank_tie_method="average",
+                                          use_precomputed_ranks=False,
+                                          ranked_results_df=None,
+                                          rank_col_suffix="_rank",
+                                          drop_incomplete_rank_datasets=False,
+                                          method_name_map=None,
+                                          highlight_method=None,
+                                          highlight_method_color="tab:blue",
+                                          highlight_method_fontsize=None,
+                                          highlight_method_fontweight=None,
+                                          highlight_connector=True,
+                                          highlight_connector_color=None,
+                                          highlight_connector_linewidth=None,
+                                          figsize=None,
+                                          fig_height=3.2,
+                                          method_spacing=1.25,
+                                          min_fig_width=10.0,
+                                          width_padding=2.0,
+                                          method_label_fontsize=10,
+                                          rank_number_fontsize=10,
+                                          title_fontsize=12,
+                                          text_h_margin=0.01,
+                                          left_only=False,
+                                          save_plots=False,
+                                          save_dir=".",
+                                          save_ext="png",
+                                          save_suffix=None,
+                                          save_dpi=300):
+    try:
+        import scikit_posthocs as sp
+    except Exception as exc:
+        raise ImportError(
+            "scikit-posthocs is required for CD diagrams. "
+            "Install it with: pip install scikit-posthocs"
+        ) from exc
+
+    from scipy.stats import friedmanchisquare
+
+    higher_is_better_metrics = set(higher_is_better_metrics or [])
+    metric_name_map = metric_name_map or {}
+    method_name_map = method_name_map or {}
+    rank_source_df = ranked_results_df if ranked_results_df is not None else results_df
+    valid_tie_methods = {"average", "min", "max", "dense", "first"}
+    if rank_tie_method not in valid_tie_methods:
+        raise ValueError(
+            f"Unsupported rank_tie_method='{rank_tie_method}'. "
+            f"Choose one of {sorted(valid_tie_methods)}."
+        )
+    summary_rows = []
+    save_dir_path = None
+    if save_plots:
+        save_dir_path = Path(save_dir)
+        save_dir_path.mkdir(parents=True, exist_ok=True)
+
+    for metric in metrics:
+        higher_is_better = metric in higher_is_better_metrics
+        metric_col = f"{metric}_mean"
+        if metric_col not in results_df.columns:
+            raise KeyError(f"Missing required column '{metric_col}' in results_df.")
+
+        metric_matrix_all = results_df.pivot_table(
+            index="dataset",
+            columns="method",
+            values=metric_col,
+            aggfunc="mean",
+        ).dropna(axis=1, how="all")
+        if method_order is not None:
+            ordered_cols = [m for m in method_order if m in metric_matrix_all.columns]
+            if ordered_cols:
+                metric_matrix_all = metric_matrix_all[ordered_cols]
+
+        available_datasets = metric_matrix_all.index.tolist()
+        metric_matrix = metric_matrix_all.dropna(axis=0, how="any")
+        used_datasets = metric_matrix.index.tolist()
+        dropped_datasets = sorted(set(available_datasets) - set(used_datasets))
+        rank_matrix = metric_matrix.rank(
+            axis=1,
+            method=rank_tie_method,
+            ascending=not higher_is_better
+        )
+
+        if rank_matrix.shape[0] < 2 or rank_matrix.shape[1] < 2:
+            print(
+                f"Skipping {metric}: need at least 2 datasets and 2 methods after filtering."
+            )
+            continue
+
+        if use_precomputed_ranks:
+            rank_col = f"{metric}{rank_col_suffix}"
+            if rank_col not in rank_source_df.columns:
+                raise KeyError(
+                    f"Missing required precomputed rank column '{rank_col}' in ranked_results_df/results_df."
+                )
+
+            rank_matrix_for_plot = rank_source_df.pivot_table(
+                index="dataset",
+                columns="method",
+                values=rank_col,
+                aggfunc="mean",
+            ).dropna(axis=1, how="all")
+            if method_order is not None:
+                ordered_rank_cols = [m for m in method_order if m in rank_matrix_for_plot.columns]
+                if ordered_rank_cols:
+                    rank_matrix_for_plot = rank_matrix_for_plot[ordered_rank_cols]
+            if drop_incomplete_rank_datasets:
+                rank_matrix_for_plot = rank_matrix_for_plot.dropna(axis=0, how="any")
+
+            avg_ranks = rank_matrix_for_plot.mean(axis=0, skipna=True).sort_values()
+            avg_ranks = avg_ranks[np.isfinite(avg_ranks.to_numpy(dtype=float))]
+        else:
+            avg_ranks = rank_matrix.mean(axis=0).sort_values()
+
+        samples = [rank_matrix[col].to_numpy() for col in rank_matrix.columns]
+        friedman_stat, friedman_p = friedmanchisquare(*samples)
+
+        if posthoc == "nemenyi":
+            sig_matrix = sp.posthoc_nemenyi_friedman(metric_matrix.to_numpy())
+            sig_matrix.index = metric_matrix.columns
+            sig_matrix.columns = metric_matrix.columns
+        elif posthoc == "wilcoxon_holm":
+            _, sig_matrix = compute_pairwise_wilcoxon_holm(
+                metric_matrix=metric_matrix,
+                higher_is_better=higher_is_better,
+                alpha=alpha,
+            )
+        else:
+            raise ValueError("posthoc must be one of: {'nemenyi', 'wilcoxon_holm'}")
+
+        # Keep only methods present in both the average-rank vector and the
+        # significance matrix used by the CD plotting routine.
+        common_methods = [m for m in avg_ranks.index if m in sig_matrix.index]
+        if len(common_methods) < 2:
+            print(
+                f"Skipping {metric}: need at least 2 common methods between ranks and significance matrix."
+            )
+            continue
+        avg_ranks = avg_ranks.loc[common_methods]
+        sig_matrix = sig_matrix.loc[common_methods, common_methods]
+
+        # Apply paper/display names to methods for plotting (must remain unique).
+        plot_method_names = [method_name_map.get(m, m) for m in avg_ranks.index]
+        if len(set(plot_method_names)) != len(plot_method_names):
+            raise ValueError(
+                "method_name_map produces duplicate method labels. "
+                "Please ensure unique display names."
+            )
+        avg_ranks_plot = avg_ranks.copy()
+        avg_ranks_plot.index = plot_method_names
+        sig_matrix_plot = sig_matrix.copy()
+        sig_matrix_plot.index = [method_name_map.get(m, m) for m in sig_matrix_plot.index]
+        sig_matrix_plot.columns = [method_name_map.get(m, m) for m in sig_matrix_plot.columns]
+
+        summary_rows.append({
+            "metric": metric,
+            "rank_source": "precomputed" if use_precomputed_ranks else "computed",
+            "rank_tie_method": rank_tie_method,
+            "n_datasets_available": int(len(available_datasets)),
+            "n_datasets": int(rank_matrix.shape[0]),
+            "n_datasets_dropped": int(len(dropped_datasets)),
+            "dropped_datasets": ", ".join(str(ds) for ds in dropped_datasets),
+            "n_methods": int(len(avg_ranks)),
+            "friedman_statistic": friedman_stat,
+            "friedman_p": friedman_p,
+            "posthoc_test": posthoc,
+        })
+
+        display_name = metric_name_map.get(metric, metric)
+        if figsize is None:
+            fig_w = max(min_fig_width, method_spacing * rank_matrix.shape[1] + width_padding)
+            local_figsize = (fig_w, fig_height)
+        else:
+            local_figsize = figsize
+        _, ax = plt.subplots(figsize=local_figsize)
+        artists = sp.critical_difference_diagram(
+            ranks=avg_ranks_plot,
+            sig_matrix=sig_matrix_plot,
+            alpha=alpha,
+            ax=ax,
+            label_fmt_left="{label} ({rank:.2f})",
+            label_fmt_right="({rank:.2f}) {label}",
+            label_props={"fontsize": method_label_fontsize},
+            text_h_margin=text_h_margin,
+            left_only=left_only,
+        )
+
+        # Force monochrome styling post-hoc to avoid any c/color alias conflicts
+        # inside scikit-posthocs internals.
+        for text_obj in ax.texts:
+            text_obj.set_color("black")
+        for line_obj in ax.lines:
+            line_obj.set_color("black")
+        for coll in ax.collections:
+            if hasattr(coll, "set_facecolor"):
+                coll.set_facecolor("black")
+            if hasattr(coll, "set_edgecolor"):
+                coll.set_edgecolor("black")
+
+        ax.tick_params(axis='x', labelsize=rank_number_fontsize, colors="black")
+
+        if highlight_method is not None:
+            highlight_label = method_name_map.get(highlight_method, highlight_method)
+            connector_color = (
+                highlight_connector_color
+                if highlight_connector_color is not None
+                else highlight_method_color
+            )
+
+            target_text_ys = []
+            for text_obj in ax.texts:
+                txt = text_obj.get_text().strip()
+                # Exact label patterns generated by label_fmt_left/right:
+                #   "{label} ({rank:.2f})" or "({rank:.2f}) {label}"
+                is_target = txt.startswith(f"{highlight_label} (") or txt.endswith(f") {highlight_label}")
+                if is_target:
+                    _, y_pos = text_obj.get_position()
+                    if np.isfinite(y_pos):
+                        target_text_ys.append(float(y_pos))
+                    if highlight_method_color is not None:
+                        text_obj.set_color(highlight_method_color)
+                    if highlight_method_fontweight is not None:
+                        text_obj.set_fontweight(highlight_method_fontweight)
+                    if highlight_method_fontsize is not None:
+                        text_obj.set_fontsize(highlight_method_fontsize)
+
+            if highlight_connector and (highlight_label in avg_ranks_plot.index) and (connector_color is not None):
+                highlight_rank = float(avg_ranks_plot.loc[highlight_label])
+                x_left, x_right = ax.get_xlim()
+                tol = max(1e-9, 0.02 * abs(x_right - x_left))
+
+                selected_line = None
+                method_labels = list(avg_ranks_plot.index)
+
+                # Preferred path: if the plotting backend returns one elbow artist per method
+                # (in the same order as ranks), pick the exact method connector by index.
+                if isinstance(artists, dict):
+                    elbow_artists = artists.get("elbows", [])
+                    if isinstance(elbow_artists, list) and len(elbow_artists) == len(method_labels):
+                        method_idx = method_labels.index(highlight_label)
+                        maybe_line = elbow_artists[method_idx]
+                        if hasattr(maybe_line, "get_xdata") and hasattr(maybe_line, "get_ydata"):
+                            selected_line = maybe_line
+
+                # Fallback path: score all plausible connectors and choose exactly one.
+                if selected_line is None:
+                    candidate_lines = []
+                    if isinstance(artists, dict):
+                        for key in ("elbows", "elbow", "elbow_lines", "label_lines"):
+                            vals = artists.get(key, [])
+                            if isinstance(vals, list):
+                                for obj in vals:
+                                    if hasattr(obj, "get_xdata") and hasattr(obj, "get_ydata"):
+                                        candidate_lines.append(obj)
+                    if len(candidate_lines) == 0:
+                        candidate_lines = [
+                            ln for ln in ax.lines
+                            if hasattr(ln, "get_xdata") and hasattr(ln, "get_ydata")
+                        ]
+
+                    scored_lines = []
+                    for ln in candidate_lines:
+                        xdata = np.asarray(ln.get_xdata(), dtype=float)
+                        ydata = np.asarray(ln.get_ydata(), dtype=float)
+                        if xdata.size == 0 or ydata.size == 0:
+                            continue
+                        if np.all(~np.isfinite(xdata)) or np.all(~np.isfinite(ydata)):
+                            continue
+
+                        xdelta = float(np.nanmin(np.abs(xdata - highlight_rank)))
+                        yspan = float(np.nanmax(ydata) - np.nanmin(ydata))
+                        if yspan <= 0:
+                            continue
+
+                        if len(target_text_ys) > 0:
+                            ydelta = min(
+                                float(np.nanmin(np.abs(ydata - y_target)))
+                                for y_target in target_text_ys
+                            )
+                        else:
+                            ydelta = 0.0
+
+                        # Prefer lines nearest in rank and nearest to the highlighted text y.
+                        scored_lines.append((xdelta, ydelta, -yspan, ln))
+
+                    if len(scored_lines) > 0:
+                        scored_lines.sort(key=lambda t: (t[0], t[1], t[2]))
+                        best_within_tol = [it for it in scored_lines if it[0] <= tol]
+                        selected_line = (best_within_tol[0] if best_within_tol else scored_lines[0])[3]
+
+                if selected_line is not None:
+                    selected_line.set_color(connector_color)
+                    if highlight_connector_linewidth is not None:
+                        selected_line.set_linewidth(highlight_connector_linewidth)
+
+        ax.set_title(
+            f"{display_name} Critical Difference Diagram",
+            fontsize=title_fontsize,
+        )
+        plt.tight_layout()
+        saved_path = None
+        if save_plots:
+            metric_fname = str(metric).replace("/", "_").replace("\\", "_")
+            suffix = str(save_suffix).strip() if save_suffix is not None else ""
+            if suffix:
+                safe_suffix = suffix.replace("/", "_").replace("\\", "_").replace(" ", "_")
+                out_name = f"img_cd_plot_{metric_fname}_{safe_suffix}.{save_ext.lstrip('.')}"
+            else:
+                out_name = f"img_cd_plot_{metric_fname}.{save_ext.lstrip('.')}"
+            saved_path = save_dir_path / out_name
+            plt.savefig(saved_path, dpi=save_dpi, bbox_inches="tight")
+        plt.show()
+        plt.close()
+
+        summary_rows[-1]["saved_path"] = str(saved_path) if saved_path is not None else np.nan
+
+    if len(summary_rows) == 0:
+        return pd.DataFrame(
+            columns=[
+                "metric", "rank_source", "rank_tie_method", "n_datasets_available", "n_datasets",
+                "n_datasets_dropped", "dropped_datasets", "n_methods", "friedman_statistic",
+                "friedman_p", "posthoc_test", "saved_path"
+            ]
+        )
+
+    return pd.DataFrame(summary_rows).sort_values("metric").reset_index(drop=True)

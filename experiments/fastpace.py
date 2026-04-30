@@ -22,17 +22,54 @@ from experiments.experiment_utils import prepare_experiment, load_ae_outlier_cal
 ]"""
 
 DATASETS = [
-    'BasicMotions', 'NATOPS',
+    # 'BasicMotions', 'NATOPS',
     'UWaveGestureLibrary',
     # 'Cricket',
     'ArticularyWordRecognition', 'Epilepsy',
     'PenDigits',
     # 'PEMS-SF',
     'RacketSports',
-    # 'SelfRegulationSCP1'
+    # 'SelfRegulationSCP1',
+    'CharacterTrajectories', 'SpokenArabicDigits', 'JapaneseVowels', 'ERing', 'Libras'
 ]
 
-EXPERIMENT_FAMILY = 'hcem_final_plau'
+DATASETS = [
+    'Adiac',
+    'ArrowHead',
+    'BirdChicken',
+    'Car',
+    'ECGFiveDays',
+    'FaceFour',
+    'Fish',
+    'FordB',
+    'LargeKitchenAppliances',
+    'Lightning2',
+    'Lightning7',
+    'Mallat',
+    'MiddlePhalanxOutlineCorrect',
+    'MoteStrain',
+    'NonInvasiveFatalECGThorax1',
+    'OSULeaf',
+    'ProximalPhalanxOutlineAgeGroup',
+    'ShapesAll',
+    'SonyAIBORobotSurface2',
+    'StarLightCurves',
+    'SwedishLeaf',
+    'Symbols',
+    'SyntheticControl',
+    'ToeSegmentation1',
+    'ToeSegmentation2',
+    'Trace',
+    'TwoLeadECG',
+    'Wafer',
+    'Yoga'
+ ]
+
+DATASETS = ['Yoga']
+
+EXPERIMENT_FAMILY = 'hcem_final_univariate_plau'
+# EXPERIMENT_FAMILY = 'hcem_final_plau'
+# EXPERIMENT_FAMILY = 'hcem_grid_search_sims_ratio_new'
 PARAMS_PATH = f'experiments/params_cf/{EXPERIMENT_FAMILY}.json'
 MODEL_TO_EXPLAIN_EXPERIMENT_NAME = "inceptiontime_pytorch"
 OC_EXPERIMENT_NAME = 'pytorch_ae_basic_train_scaling'
