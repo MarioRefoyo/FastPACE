@@ -13,7 +13,7 @@ import torch
 from sklearn.metrics import classification_report
 
 from experiments.experiment_utils import store_partial_cfs, load_parameters_from_json,generate_settings_combinations
-from experiments.results.results_concatenator import concatenate_result_files
+from experiments.results_concatenator import concatenate_result_files
 
 from methods.outlier_calculators import AEOutlierCalculator
 from methods.MultiSubSpaCECF import MultiSubSpaCECF

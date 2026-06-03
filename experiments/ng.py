@@ -13,7 +13,7 @@ import torch
 from sklearn.metrics import classification_report
 
 from experiments.experiment_utils import store_partial_cfs, load_parameters_from_json
-from experiments.results.results_concatenator import concatenate_result_files
+from experiments.results_concatenator import concatenate_result_files
 from methods.NGCF import NGCF
 from methods.nun_finders import GlobalNUNFinder
 from methods.MultiSubSpaCE.FeatureImportanceInitializers import GraCAMPlusFI, NoneFI
