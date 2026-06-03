@@ -13,7 +13,7 @@ from sklearn.metrics import classification_report
 
 from experiments.experiment_utils import local_data_loader, label_encoder, store_partial_cfs, \
     load_parameters_from_json, generate_settings_combinations, get_subsample
-from experiments.results.results_concatenator import concatenate_result_files
+from experiments.results_concatenator import concatenate_result_files
 
 from methods.DiscoXCF import DiscoXCF
 from experiments.experiment_utils import prepare_experiment, load_model

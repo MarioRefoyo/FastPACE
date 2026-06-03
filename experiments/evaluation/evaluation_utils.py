@@ -32,9 +32,15 @@ def get_start_end_subsequence_positions(orig_change_mask):
     return before_after_ones_mask
 
 
+def thresholded_change_mask(x_orig, x_cf):
+    proximity_values = np.abs(x_orig - x_cf)
+    threshold_values = np.sqrt(np.abs(x_orig) * 0.0001)
+    return (proximity_values > threshold_values).astype(int)
+
+
 def calculate_change_mask(x_orig, x_cf, x_nun=None, verbose=0):
     # Get original change mask (could contain points with common values between NUN, x_orig and x_cf)
-    orig_change_mask = (x_orig != x_cf).astype(int)
+    orig_change_mask = thresholded_change_mask(x_orig, x_cf)
     orig_change_mask = orig_change_mask.T.reshape(-1, 1)
 
     # Find common values
@@ -58,7 +64,7 @@ def calculate_change_mask(x_orig, x_cf, x_nun=None, verbose=0):
         new_x_orig = x_orig + noise * start_end_mask.reshape(x_orig.shape, order='F')
 
         # Calculate adjusted change mask
-        change_mask = (new_x_orig != x_cf).astype(int)
+        change_mask = thresholded_change_mask(new_x_orig, x_cf)
     else:
         change_mask = orig_change_mask.reshape(x_orig.shape, order='F')
 

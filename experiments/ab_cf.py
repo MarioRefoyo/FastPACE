@@ -14,7 +14,7 @@ import torch
 
 
 from experiments.experiment_utils import store_partial_cfs, load_parameters_from_json
-from experiments.results.results_concatenator import concatenate_result_files
+from experiments.results_concatenator import concatenate_result_files
 from methods.ABCF import ABCF
 from experiments.experiment_utils import prepare_experiment, load_model
 
