@@ -14,14 +14,15 @@ class RewardCalculator(ABC):
         self.best_fitness = -np.inf
         self.best_fitness_step = 0
         self.best_fitness_mask = None
+        self.last_valid = False
 
         self.non_valid_penalization = non_valid_penalization
 
-    @staticmethod
-    def compute_losses(x_orig, nun, x_cf, mask, desired_label, weights, non_valid_penalization, model_wrapper,
+    def compute_losses(self, x_orig, nun, x_cf, mask, desired_label, weights, non_valid_penalization, model_wrapper,
                        outlier_calculator, original_outlier_score) -> float:
         adv, y_pred = losses.adversarial_loss(x_cf, desired_label, model_wrapper)
         adv, y_pred = adv[0], y_pred[0]
+        self.last_valid = bool(y_pred == desired_label)
         spa = losses.sparsity_loss(mask, feature_dim=0, ts_dim=1)
         sub = losses.contiguity_loss(mask, feature_dim=0, ts_dim=1)
         pla = losses.plausibility_loss(x_cf, outlier_calculator, original_outlier_score)[0]
@@ -38,7 +39,7 @@ class RewardCalculator(ABC):
             weights=weights, non_valid_penalization=self.non_valid_penalization, model_wrapper=model_wrapper,
             outlier_calculator=outlier_calculator, original_outlier_score=original_outlier_score
         )
-        if fitness > self.best_fitness:
+        if self.last_valid and fitness > self.best_fitness:
             self.best_fitness = fitness
             self.best_fitness_step = step
             self.best_fitness_mask = mask.copy()

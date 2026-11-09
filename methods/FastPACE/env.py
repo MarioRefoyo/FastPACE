@@ -271,6 +271,10 @@ class CFEnv(gym.Env, ABC):
             self.desired_label, self.weights, self.non_valid_penalization, self.model_wrapper, 
             self.outlier_calculator, self.original_outlier_score
         )
+        self.reward_calculator.best_fitness = self.nun_fitness
+        self.reward_calculator.best_fitness_mask = np.ones(
+            self.x_orig.shape, dtype=np.bool_
+        )
         x_cf = self.compute_cfe(self.x_orig, self.nun, self.mask)
         _ = self.reward_calculator.calculate_reward(
             self.x_orig, self.nun, x_cf, self.mask,

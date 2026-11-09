@@ -22,18 +22,6 @@ from experiments.experiment_utils import prepare_experiment, load_ae_outlier_cal
 ]"""
 
 DATASETS = [
-    # 'BasicMotions', 'NATOPS',
-    'UWaveGestureLibrary',
-    # 'Cricket',
-    'ArticularyWordRecognition', 'Epilepsy',
-    'PenDigits',
-    # 'PEMS-SF',
-    'RacketSports',
-    # 'SelfRegulationSCP1',
-    'CharacterTrajectories', 'SpokenArabicDigits', 'JapaneseVowels', 'ERing', 'Libras'
-]
-
-DATASETS = [
     'Adiac',
     'ArrowHead',
     'BirdChicken',
@@ -65,10 +53,21 @@ DATASETS = [
     'Yoga'
  ]
 
-DATASETS = ['Yoga']
 
-EXPERIMENT_FAMILY = 'hcem_final_univariate_plau'
-# EXPERIMENT_FAMILY = 'hcem_final_plau'
+DATASETS = [
+    # 'BasicMotions', 'NATOPS',
+    'UWaveGestureLibrary',
+    # 'Cricket',
+    'ArticularyWordRecognition', 'Epilepsy',
+    'PenDigits',
+    # 'PEMS-SF',
+    'RacketSports',
+    # 'SelfRegulationSCP1',
+    'CharacterTrajectories', 'SpokenArabicDigits', 'JapaneseVowels', 'ERing', 'Libras'
+]
+
+# EXPERIMENT_FAMILY = 'hcem_final_univariate_plau'
+EXPERIMENT_FAMILY = 'hcem_final_plau'
 # EXPERIMENT_FAMILY = 'hcem_grid_search_sims_ratio_new'
 PARAMS_PATH = f'experiments/params_cf/{EXPERIMENT_FAMILY}.json'
 MODEL_TO_EXPLAIN_EXPERIMENT_NAME = "inceptiontime_pytorch"

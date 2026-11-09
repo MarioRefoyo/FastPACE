@@ -484,6 +484,14 @@ class HierarchicalCEMNN(RLAlgorithm):
 
             # Advance env temporal mask via the chosen action
             mask_curr = current_cemnn.env.renew_mask_vec(mask_curr[np.newaxis, ...], np.array([best_action]))[0]
+            if best_action != current_cemnn.stop_action:
+                x_cf_curr = self.env.compute_cfe(self.env.x_orig, self.env.nun, mask_curr)
+                self.env.reward_calculator.calculate_reward(
+                    self.env.x_orig, self.env.nun, x_cf_curr, mask_curr,
+                    self.env.desired_label, self.env.weights, self.env.model_wrapper,
+                    self.env.outlier_calculator, self.env.original_outlier_score,
+                    step=ext_step + 1
+                )
                     
             # Check if we need to change level
             if best_action == current_cemnn.stop_action:
@@ -532,8 +540,8 @@ class HierarchicalCEMNN(RLAlgorithm):
         # Append length to buffer
         buf_e_len.append(ext_step)
 
-        # Reset environment to the end of the episode mask
-        self.env.reset(x_orig=state["x_orig"], nun=np.expand_dims(state["nun"], axis=0), mask=mask_curr)
+        self.env.mask = mask_curr
+        self.env.steps = ext_step + 1
 
         return buf_x_orig, buf_x_nun, buf_x_cf, buf_mask, buf_pi_star, buf_v_star, buf_e_len
 
@@ -649,10 +657,12 @@ class CEMSequencePlanningNN:
     def run_cem(self, mask, logits, iters, num_sims, planning_steps, temp, tabu_mode, target):
         # Run normal CEM execution
         track_credit = bool(self.planning_credit)
+        current_fitness = self.env.evaluate_counterfactual_batch(
+            np.expand_dims(mask, axis=0)
+        ).astype(np.float64)
         initial_fitness = None
         if track_credit:
-            initial_fitness = self.env.evaluate_counterfactual_batch(np.expand_dims(mask, axis=0)).astype(np.float64)
-            initial_fitness = np.repeat(initial_fitness, num_sims, axis=0)
+            initial_fitness = np.repeat(current_fitness, num_sims, axis=0)
 
         allowed_mask = self.allowed_action_mask
         if allowed_mask is not None:
@@ -663,8 +673,8 @@ class CEMSequencePlanningNN:
                 allowed_mask = allowed_mask.copy()
                 allowed_mask[self.stop_action] = True
 
-        best_seq = None
-        best_fit = -np.inf
+        best_seq = np.full(planning_steps, self.stop_action, dtype=np.int32)
+        best_fit = float(current_fitness[0])
         last_sequences = None
         last_fitness = None
         last_elites = None
